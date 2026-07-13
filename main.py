@@ -13,7 +13,7 @@ import pandas as pd
 
 from src.config import DICTIONNAIRE_CATEGORIES
 from src.classifiers import recategoriser_dataset
-from src.extractors import extraire_dimensions, extraire_couleurs
+from src.extractors import extraire_dimensions, extraire_couleurs, extract_dimensions_series, extract_couleurs_series
 
 def process_file(input_path: Path, output_dir: Path) -> None:
     input_path = Path(input_path)
@@ -29,8 +29,9 @@ def process_file(input_path: Path, output_dir: Path) -> None:
     df = recategoriser_dataset(df, DICTIONNAIRE_CATEGORIES)
 
     print("🎨 Extraction des dimensions et des couleurs en cours...")
-    df['Dimension_Extraite'] = df['Libellé produit'].apply(extraire_dimensions)
-    df['Couleur_Extraite'] = df['Libellé produit'].apply(extraire_couleurs)
+    # vectorized extractors (much faster on large DataFrames)
+    df['Dimension_Extraite'] = extract_dimensions_series(df['Libellé produit'])
+    df['Couleur_Extraite'] = extract_couleurs_series(df['Libellé produit'])
 
     # Ensure expected types/format
     if 'Cod_cmd' in df.columns:

@@ -1,0 +1,502 @@
+{
+  "Matelas": [
+    "matelas",
+    "mousse",
+    "forme",
+    "140x190",
+    "memoire",
+    "epaisseur",
+    "relax",
+    "simpur"
+  ],
+  "Lit adulte": [
+    "lit",
+    "140x190",
+    "adulte",
+    "coffre",
+    "160x200",
+    "sommier",
+    "double",
+    "led"
+  ],
+  "Meuble à chaussures": [
+    "matelas",
+    "chaussures",
+    "mousse",
+    "140x190",
+    "meuble",
+    "forme",
+    "epaisseur",
+    "relax"
+  ],
+  "Chaise": [
+    "chaises",
+    "lot",
+    "chaise",
+    "manger",
+    "salle",
+    "scandinaves",
+    "gris",
+    "noires"
+  ],
+  "Bureau": [
+    "bureau",
+    "table",
+    "informatique",
+    "vasagle",
+    "angle",
+    "tiroir",
+    "blanc",
+    "tiroirs"
+  ],
+  "Lave linge": [
+    "linge",
+    "lave",
+    "ouverture",
+    "hublot",
+    "6kg",
+    "dessus",
+    "10kg",
+    "frontal"
+  ],
+  "Bibliotheque": [
+    "bibliotheque",
+    "cases",
+    "etagere",
+    "rangement",
+    "vasagle",
+    "niveaux",
+    "meuble",
+    "bois"
+  ],
+  "Armoire": [
+    "armoire",
+    "portes",
+    "tiroirs",
+    "tiroir",
+    "coulissantes",
+    "penderie",
+    "battantes",
+    "miroir"
+  ],
+  "Table basse": [
+    "table",
+    "basse",
+    "salon",
+    "rectangulaire",
+    "blanc",
+    "plateau",
+    "bois",
+    "style"
+  ],
+  "Meuble tv": [
+    "meuble",
+    "blanc",
+    "140",
+    "led",
+    "com",
+    "brillant",
+    "noir",
+    "mat"
+  ],
+  "_(empty)_": [
+    "adherer",
+    "programme",
+    "fidelite",
+    "carte",
+    "confo",
+    "reprise",
+    "ancien",
+    "produit"
+  ],
+  "Lit jeune": [
+    "lit",
+    "90x190",
+    "enfant",
+    "sommier",
+    "blanc",
+    "matelas",
+    "mezzanine",
+    "tiroir"
+  ],
+  "Chaise de bureau": [
+    "bureau",
+    "fauteuil",
+    "chaise",
+    "ergonomique",
+    "reglable",
+    "siege",
+    "noir",
+    "hauteur"
+  ],
+  "Tapis de Salon et Ch": [
+    "tapis",
+    "120x170",
+    "160x230",
+    "moderne",
+    "salon",
+    "noir",
+    "sol",
+    "adapte"
+  ],
+  "Commode": [
+    "commode",
+    "tiroirs",
+    "meuble",
+    "chambre",
+    "rangement",
+    "salon",
+    "moderne",
+    "bureau"
+  ],
+  "Tv ecran plat": [
+    "televiseur",
+    "uhd",
+    "led",
+    "108",
+    "146",
+    "126",
+    "138",
+    "qled"
+  ],
+  "Table": [
+    "table",
+    "manger",
+    "personnes",
+    "allonge",
+    "blanc",
+    "salle",
+    "scandinave",
+    "rectangulaire"
+  ],
+  "Refrigerateur": [
+    "refrigerateur",
+    "combine",
+    "litres",
+    "portes",
+    "top",
+    "273",
+    "table",
+    "froid"
+  ],
+  "Canapé d'angle": [
+    "angle",
+    "canape",
+    "convertible",
+    "places",
+    "reversible",
+    "tissu",
+    "gris",
+    "droit"
+  ],
+  "Sommier": [
+    "sommier",
+    "lattes",
+    "tapissier",
+    "140x190",
+    "cadre",
+    "160x200",
+    "kit",
+    "pieds"
+  ],
+  "Buffet": [
+    "portes",
+    "buffet",
+    "tiroirs",
+    "rangement",
+    "meuble",
+    "enfilade",
+    "tiroir",
+    "blanc"
+  ],
+  "Cadre à lattes": [
+    "lattes",
+    "cadre",
+    "fixe",
+    "140x190",
+    "epoxy",
+    "160x200",
+    "90x190",
+    "sommier"
+  ],
+  "Four": [
+    "four",
+    "multifonction",
+    "pyrolyse",
+    "catalyse",
+    "convection",
+    "naturelle",
+    "60cm",
+    "encastrable"
+  ],
+  "Lave vaisselle": [
+    "lave",
+    "vaisselle",
+    "integrable",
+    "couverts",
+    "largeur",
+    "full",
+    "60cm",
+    "inox"
+  ],
+  "Plaque de cuisson": [
+    "cuisson",
+    "table",
+    "induction",
+    "vitroceramique",
+    "gaz",
+    "foyers",
+    "plaque",
+    "noir"
+  ],
+  "Friteuse": [
+    "canape",
+    "places",
+    "convertible",
+    "angle",
+    "tissu",
+    "gris",
+    "reversible",
+    "couleur"
+  ],
+  "Micro ondes": [
+    "micro",
+    "ondes",
+    "monofonction",
+    "gril",
+    "grill",
+    "multifonction",
+    "encastrable",
+    "20l"
+  ],
+  "Chevet": [
+    "chevet",
+    "table",
+    "tiroir",
+    "tiroirs",
+    "nuit",
+    "bois",
+    "appoint",
+    "tables"
+  ],
+  "Canape droit": [
+    "canape",
+    "places",
+    "tissu",
+    "convertible",
+    "gris",
+    "fixe",
+    "droit",
+    "scandinave"
+  ],
+  "Meuble bas cuisine": [
+    "meuble",
+    "bas",
+    "tiroir",
+    "portes",
+    "porte",
+    "tiroirs",
+    "caissons",
+    "four"
+  ],
+  "Fauteuil": [
+    "fauteuil",
+    "tissu",
+    "gris",
+    "velours",
+    "scandinave",
+    "pieds",
+    "bascule",
+    "reglable"
+  ],
+  "Banquette": [
+    "banquette",
+    "clic",
+    "clac",
+    "lit",
+    "places",
+    "tissu",
+    "convertible",
+    "120x190"
+  ],
+  "Matelas + sommier": [
+    "sommier",
+    "matelas",
+    "memoire",
+    "ensemble",
+    "forme",
+    "140x190",
+    "ressorts",
+    "160x200"
+  ],
+  "Couette": [
+    "couette",
+    "240x220",
+    "140x200",
+    "oreillers",
+    "60x60",
+    "260x240",
+    "oreiller",
+    "140x200cm"
+  ],
+  "Tabouret": [
+    "bar",
+    "lot",
+    "tabourets",
+    "tabouret",
+    "chaises",
+    "cuisine",
+    "noir",
+    "gris"
+  ],
+  "Coiffeuse": [
+    "coiffeuse",
+    "maquillage",
+    "miroir",
+    "table",
+    "tiroirs",
+    "tabouret",
+    "vasagle",
+    "blanc"
+  ],
+  "Parure de lit": [
+    "housse",
+    "parure",
+    "couette",
+    "oreiller",
+    "taies",
+    "taie",
+    "240x220",
+    "140x200"
+  ],
+  "Porte manteau": [
+    "porte",
+    "manteau",
+    "meuble",
+    "vestiaire",
+    "style",
+    "vasagle",
+    "vintage",
+    "metallique"
+  ],
+  "Meuble haut cuisine": [
+    "meuble",
+    "haut",
+    "portes",
+    "porte",
+    "dessus",
+    "hotte",
+    "cuisine",
+    "micro"
+  ],
+  "Seche linge": [
+    "linge",
+    "seche",
+    "ouverture",
+    "hublot",
+    "9kg",
+    "10kg",
+    "chaleur",
+    "pompe"
+  ],
+  "Buffet de cuisine": [
+    "buffet",
+    "cuisine",
+    "portes",
+    "tiroirs",
+    "blanc",
+    "etagere",
+    "vasagle",
+    "rangement"
+  ],
+  "Aspirateur balai": [
+    "aspirateur",
+    "balai",
+    "rechargeable",
+    "sans",
+    "fil",
+    "koenig",
+    "powerclean",
+    "up600"
+  ],
+  "Etagère": [
+    "etagere",
+    "rangement",
+    "murale",
+    "bibliotheque",
+    "niveaux",
+    "tagere",
+    "vintage",
+    "bois"
+  ],
+  "Pc portable": [
+    "portable",
+    "pouces",
+    "windows",
+    "10s",
+    "ordinateur",
+    "ssd",
+    "ghz",
+    "ram"
+  ],
+  "Hotte": [
+    "hotte",
+    "decorative",
+    "klarstein",
+    "aspirante",
+    "classe",
+    "murale",
+    "60cm",
+    "noir"
+  ],
+  "Console": [
+    "console",
+    "table",
+    "extensible",
+    "entree",
+    "vasagle",
+    "jusqu",
+    "rallonges",
+    "style"
+  ],
+  "Lampadaire": [
+    "lampadaire",
+    "metal",
+    "bois",
+    "noir",
+    "tosel",
+    "abat",
+    "140",
+    "jour"
+  ],
+  "Cuisiniere": [
+    "cuisiniere",
+    "gaz",
+    "vitroceramique",
+    "electrique",
+    "mixte",
+    "induction",
+    "60cm",
+    "four"
+  ],
+  "Colonne sdb": [
+    "colonne",
+    "armoire",
+    "salle",
+    "bain",
+    "meuble",
+    "rangement",
+    "blanc",
+    "bains"
+  ],
+  "Ens table chaises": [
+    "table",
+    "ensemble",
+    "chaises",
+    "noir",
+    "tectake",
+    "cuisine",
+    "jardin",
+    "tabourets"
+  ]
+}
