@@ -1,46 +1,46 @@
-# Contient l'algo RegEx (extraction dimensions & couleurs)
+"""Algorithmes d'extraction lisibles (dimensions & couleurs).
+
+Les fonctions sont conçues pour être simples et explicites — faciles à
+modifier ou étendre pour de nouveaux formats.
+"""
 import re
+from typing import List
+
 from src.config import LISTE_COULEURS, NORMALISATION_COULEURS
 
-def extraire_dimensions(libelle):
+
+def extraire_dimensions(libelle: str) -> str:
+    """Retourne une dimension extraite ou 'Non spécifiée'.
+
+    Exemples reconnus : '140x190', '140 x 190', '140 cm'.
     """
-    Parcourt le libellé pour trouver les dimensions :
-    1. Cherche d'abord un format double (ex: 140x190) -> Renvoie '140*190'
-    2. Si absent, cherche une dimension unique en cm (ex: 140 cm) -> Renvoie '140'
-    """
-    libelle_clean = str(libelle).lower()
-    
-    # --- RÈGLE 1 : Recherche d'une double dimension (Largeur x Longueur) ---
-    pattern_double = r'(\d{2,3})\s*(?:x|\*)\s*(\d{2,3})'
-    match_double = re.search(pattern_double, libelle_clean)
-    if match_double:
-        return f"{match_double.group(1)}*{match_double.group(2)}"
-        
-    pattern_single = r'\b(\d{2,3})\s*cm\b'
-    match_single = re.search(pattern_single, libelle_clean)
-    if match_single:
-        return match_single.group(1)
-        
+    s = str(libelle).lower()
+
+    # Recherche width x height
+    m = re.search(r"(\d{2,3})\s*(?:x|\*)\s*(\d{2,3})", s)
+    if m:
+        return f"{m.group(1)}*{m.group(2)}"
+
+    # Recherche d'une seule valeur en cm
+    m = re.search(r"\b(\d{2,3})\s*cm\b", s)
+    if m:
+        return m.group(1)
+
     return "Non spécifiée"
 
-def extraire_couleurs(libelle):
+
+def extraire_couleurs(libelle: str) -> str:
+    """Liste et normalise les couleurs trouvées (ordre d'apparition).
+
+    Renvoie 'Couleur1 - Couleur2' ou 'Non spécifiée'.
     """
-    Identifie TOUTES les couleurs présentes dans le texte dans leur ordre d'apparition
-    et les rassemble (ex: 'Blanc - Gris').
-    """
-    libelle_clean = str(libelle).lower()
-    couleurs_trouvees = []
-    
-    # On parcourt le texte mot par mot ou par blocs pour trouver toutes les correspondances
+    s = str(libelle).lower()
+    trouvees: List[str] = []
+
     for couleur in LISTE_COULEURS:
-        if re.search(r'\b' + couleur + r'\b', libelle_clean):
-            nom_propre = NORMALISATION_COULEURS.get(couleur, couleur.capitalize())
-            # Évite d'ajouter des doublons (ex: si le libellé contient "blanc" et "blanche")
-            if nom_propre not in couleurs_trouvees:
-                couleurs_trouvees.append(nom_propre)
-                
-    if couleurs_trouvees:
-        # On les fusionne proprement avec un séparateur
-        return " - ".join(couleurs_trouvees)
-        
-    return "Non spécifiée"
+        if re.search(r"\b" + re.escape(couleur) + r"\b", s):
+            nom = NORMALISATION_COULEURS.get(couleur, couleur.capitalize())
+            if nom not in trouvees:
+                trouvees.append(nom)
+
+    return " - ".join(trouvees) if trouvees else "Non spécifiée"
