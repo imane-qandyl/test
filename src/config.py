@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 
 
-def _is_hex_color_key(value: str) -> bool:
+def is_hex_color_key(value: str) -> bool:
     if not value:
         return False
     if value.startswith('#'):
@@ -20,8 +20,8 @@ def load_colors():
             with json_path.open(encoding='utf-8') as fh:
                 data = json.load(fh)
 
-            normal = {}
-            liste = []
+            color_mapping = {}
+            color_names = []
             for raw_key, canon in data.items():
                 if not canon:
                     continue
@@ -32,37 +32,37 @@ def load_colors():
 
                 canonical_key = canon_name.lower()
 
-                if _is_hex_color_key(alias_key):
-                    if canonical_key not in normal:
-                        normal[canonical_key] = canon_name
-                    if canonical_key not in liste:
-                        liste.append(canonical_key)
+                if is_hex_color_key(alias_key):
+                    if canonical_key not in color_mapping:
+                        color_mapping[canonical_key] = canon_name
+                    if canonical_key not in color_names:
+                        color_names.append(canonical_key)
                     continue
 
-                if alias_key not in normal:
-                    normal[alias_key] = canon_name
-                if alias_key not in liste:
-                    liste.append(alias_key)
+                if alias_key not in color_mapping:
+                    color_mapping[alias_key] = canon_name
+                if alias_key not in color_names:
+                    color_names.append(alias_key)
 
-                if canonical_key not in normal:
-                    normal[canonical_key] = canon_name
-                if canonical_key not in liste:
-                    liste.append(canonical_key)
+                if canonical_key not in color_mapping:
+                    color_mapping[canonical_key] = canon_name
+                if canonical_key not in color_names:
+                    color_names.append(canonical_key)
 
-            return liste, normal
+            return color_names, color_mapping
         except Exception:
-            # Fall back to empty mappings on any error.
             return [], {}
     return [], {}
 
 
-LISTE_COULEURS, NORMALISATION_COULEURS = load_colors()
+COLOR_NAMES, COLOR_NORMALIZATION = load_colors()
+LISTE_COULEURS = COLOR_NAMES
+NORMALISATION_COULEURS = COLOR_NORMALIZATION
 
 
 def load_categories():
     root = Path(__file__).resolve().parents[1]
     json_path = root / 'data' / 'dictionaries' / 'categories.json'
-    # fallback curated mapping
     fallback = {
         "Table basse": ["table basse", "table de salon", "table basse carree"],
         "Canapé": ["canape", "sofa", "clic clac", "convertible"],
@@ -75,15 +75,16 @@ def load_categories():
             with json_path.open(encoding='utf-8') as fh:
                 data = json.load(fh)
             cleaned = {}
-            for cat, kws in data.items():
-                if isinstance(kws, list):
-                    cleaned[cat] = [str(k).strip().lower() for k in kws if str(k).strip()]
+            for category, keywords in data.items():
+                if isinstance(keywords, list):
+                    cleaned[category] = [str(keyword).strip().lower() for keyword in keywords if str(keyword).strip()]
                 else:
-                    cleaned[cat] = [p.strip().lower() for p in str(kws).split(',') if p.strip()]
+                    cleaned[category] = [keyword.strip().lower() for keyword in str(keywords).split(',') if keyword.strip()]
             return cleaned
         except Exception:
             return fallback
     return fallback
 
 
-DICTIONNAIRE_CATEGORIES = load_categories()
+CATEGORY_DICTIONARY = load_categories()
+DICTIONNAIRE_CATEGORIES = CATEGORY_DICTIONARY

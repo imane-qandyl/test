@@ -1,47 +1,48 @@
 import re
 import unicodedata
 from typing import Dict, List, Optional, Pattern, Tuple
+
 import pandas as pd
 
-from src.config import LISTE_COULEURS, NORMALISATION_COULEURS
+from src.config import COLOR_NAMES, COLOR_NORMALIZATION
 
 
-def _normalize_text(text: str) -> str:
-    t = str(text or '').lower()
-    t = unicodedata.normalize('NFKD', t)
-    return ''.join(ch for ch in t if not unicodedata.combining(ch))
+def normalize_text(text: str) -> str:
+    value = str(text or '').lower()
+    value = unicodedata.normalize('NFKD', value)
+    return ''.join(ch for ch in value if not unicodedata.combining(ch))
 
 
-def _build_color_matcher() -> Tuple[Dict[str, str], Optional[Pattern[str]]]:
+def build_color_matcher() -> Tuple[Dict[str, str], Optional[Pattern[str]]]:
     mapping: Dict[str, str] = {}
     keys: List[str] = []
-    for keyword, canon in NORMALISATION_COULEURS.items():
-        nk = _normalize_text(keyword)
-        if not nk:
+    for keyword, canon in COLOR_NORMALIZATION.items():
+        normalized_key = normalize_text(keyword)
+        if not normalized_key:
             continue
-        if nk not in mapping:
-            mapping[nk] = canon
-        keys.append(nk)
+        if normalized_key not in mapping:
+            mapping[normalized_key] = canon
+        keys.append(normalized_key)
 
-    uniq_keys = sorted(set(keys), key=len, reverse=True)
-    if not uniq_keys:
+    unique_keys = sorted(set(keys), key=len, reverse=True)
+    if not unique_keys:
         return mapping, None
 
-    pattern = re.compile(r"\b(?:" + "|".join(re.escape(k) for k in uniq_keys) + r")\b")
+    pattern = re.compile(r"\b(?:" + "|".join(re.escape(key) for key in unique_keys) + r")\b")
     return mapping, pattern
 
 
-_COLOR_MAP, _COLOR_PATTERN = _build_color_matcher()
+COLOR_MAP, COLOR_PATTERN = build_color_matcher()
 
 
-def _extract_colors_from_normalized_text(text: str) -> str:
+def extract_colors_from_normalized_text(text: str) -> str:
     found: List[str] = []
     seen = set()
-    if not _COLOR_PATTERN:
+    if not COLOR_PATTERN:
         return 'Non spécifiée'
 
-    for match in _COLOR_PATTERN.finditer(str(text or '')):
-        canon = _COLOR_MAP.get(match.group(0), match.group(0).capitalize())
+    for match in COLOR_PATTERN.finditer(str(text or '')):
+        canon = COLOR_MAP.get(match.group(0), match.group(0).capitalize())
         if canon not in seen:
             seen.add(canon)
             found.append(canon)
@@ -55,120 +56,171 @@ NON_DIMENSION_WORDS = {
     'x', 'xx', 'xxx'
 }
 
+# Pre-compile dimension patterns at module load time
+_PATTERN_TRIPLE = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)(?:\s*cm)?(?![a-z0-9])")
+_PATTERN_DOUBLE = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)(?:\s*cm)?(?![a-z0-9])")
+_PATTERN_CM = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*cm(?![a-z0-9])")
+_PATTERN_PLUS = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*\+(?![a-z0-9])")
+_PATTERN_SIGNAL = re.compile(r"(?<![a-z0-9])\d+(?:[.,]\d+)?\s*(?:cm|\+|x|\*)(?![a-z0-9])")
+_PATTERN_NUMBER = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)(?![a-z0-9])")
 
-def _build_dimension_output(values: List[str]) -> str:
+
+def build_dimension_output(values: List[str]) -> str:
     return " / ".join(values) if values else "Non spécifiée"
 
 
-def _looks_like_dimension_context(text: str, start: int, end: int) -> bool:
+def looks_like_dimension_context(text: str, start: int, end: int) -> bool:
     snippet = text[max(0, start - 20):min(len(text), end + 20)].lower()
     return any(token in snippet for token in ['cm', 'hauteur', 'largeur', 'longueur', 'profondeur', 'dimension', 'dimensions'])
 
 
-def _should_skip_candidate(text: str, match: re.Match[str]) -> bool:
-    after = text[match.end():]
-    after = after.lstrip()
-    if not after:
+def should_skip_candidate(text: str, match: re.Match[str]) -> bool:
+    next_text = text[match.end():].lstrip()
+    if not next_text:
         return False
 
-    if after.startswith(('cm', 'c', 'l', 'g', 'm', 'k')) and len(after) <= 2:
+    if next_text.startswith(('cm', 'c', 'l', 'g', 'm', 'k')) and len(next_text) <= 2:
         return True
 
-    token_match = re.match(r"([a-z]+)", after)
+    token_match = re.match(r"([a-z]+)", next_text)
     if token_match and token_match.group(1).lower() in NON_DIMENSION_WORDS:
         return True
 
-    before = text[:match.start()].rstrip().split()[-1] if text[:match.start()].split() else ''
-    if before.lower() in NON_DIMENSION_WORDS:
+    previous_token = text[:match.start()].rstrip().split()[-1] if text[:match.start()].split() else ''
+    if previous_token.lower() in NON_DIMENSION_WORDS:
         return True
 
     return False
 
 
-def extraire_dimensions(libelle: str) -> str:
-    """Retourne une ou plusieurs dimensions lisibles ou 'Non spécifiée'."""
-    s = _normalize_text(libelle)
-    if not s:
+def extract_dimensions(label: str) -> str:
+    """Return one or more readable dimensions or 'Non spécifiée'."""
+    # Early exit for empty or numeric-less labels
+    if not label or not any(c.isdigit() for c in str(label)):
+        return "Non spécifiée"
+    
+    normalized_text = normalize_text(label)
+    if not normalized_text:
         return "Non spécifiée"
 
-    has_dimension_signal = bool(re.search(r"(?<![a-z0-9])\d+(?:[.,]\d+)?\s*(?:cm|\+|x|\*)(?![a-z0-9])", s))
-    patterns = [
-        (re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)(?:\s*cm)?(?![a-z0-9])"), 'triple'),
-        (re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)(?:\s*cm)?(?![a-z0-9])"), 'double'),
-        (re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*cm(?![a-z0-9])"), 'cm'),
-        (re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*\+(?![a-z0-9])"), 'plus'),
-    ]
-
+    has_dimension_signal = bool(_PATTERN_SIGNAL.search(normalized_text))
+    
     candidates: List[Tuple[int, int, str]] = []
     spans: List[Tuple[int, int]] = []
-    triple_matches = [match for pattern, kind in patterns if kind == 'triple' for match in pattern.finditer(s)]
-    for pattern, kind in patterns:
-        for match in pattern.finditer(s):
-            if _should_skip_candidate(s, match):
-                continue
-            if triple_matches and kind != 'triple':
-                continue
-            if kind == 'double' and match.group(0).endswith('cm'):
-                value = f"{match.group(1)}x{match.group(2)}"
-            elif kind == 'double':
-                value = f"{match.group(1)}x{match.group(2)}"
-            elif kind == 'triple':
+    
+    # Check for triple dimensions
+    triple_matches = list(_PATTERN_TRIPLE.finditer(normalized_text))
+    
+    if triple_matches:
+        for match in triple_matches:
+            if not should_skip_candidate(normalized_text, match):
                 value = f"{match.group(1)}x{match.group(2)}x{match.group(3)}"
-            elif kind == 'cm':
+                candidates.append((match.start(), match.end(), value))
+                spans.append((match.start(), match.end()))
+    else:
+        # Check for double dimensions
+        for match in _PATTERN_DOUBLE.finditer(normalized_text):
+            if not should_skip_candidate(normalized_text, match):
+                value = f"{match.group(1)}x{match.group(2)}"
+                candidates.append((match.start(), match.end(), value))
+                spans.append((match.start(), match.end()))
+        
+        # Check for cm values
+        for match in _PATTERN_CM.finditer(normalized_text):
+            if not should_skip_candidate(normalized_text, match):
                 value = f"{match.group(1)} cm"
-            else:
+                candidates.append((match.start(), match.end(), value))
+                spans.append((match.start(), match.end()))
+        
+        # Check for plus values
+        for match in _PATTERN_PLUS.finditer(normalized_text):
+            if not should_skip_candidate(normalized_text, match):
                 value = f"{match.group(1)}+"
-            candidates.append((match.start(), match.end(), value))
-            spans.append((match.start(), match.end()))
+                candidates.append((match.start(), match.end(), value))
+                spans.append((match.start(), match.end()))
 
-    if has_dimension_signal:
-        for match in re.finditer(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)(?![a-z0-9])", s):
-            if _should_skip_candidate(s, match):
+    # If dimension signal detected, also check for standalone numbers
+    if has_dimension_signal and not candidates:
+        for match in _PATTERN_NUMBER.finditer(normalized_text):
+            if should_skip_candidate(normalized_text, match):
                 continue
             if any(match.start() < end and match.end() > start for start, end in spans):
                 continue
-            if not _looks_like_dimension_context(s, match.start(), match.end()):
-                if not re.search(r"(?:^|\s)\d+(?:[.,]\d+)?\s+\d+(?:[.,]\d+)?", s[max(0, match.start()-20):match.end()+20]):
+            if not looks_like_dimension_context(normalized_text, match.start(), match.end()):
+                if not re.search(r"(?:^|\s)\d+(?:[.,]\d+)?\s+\d+(?:[.,]\d+)?", normalized_text[max(0, match.start()-20):match.end()+20]):
                     continue
             if len(match.group(1)) <= 2 and triple_matches:
                 continue
             candidates.append((match.start(), match.end(), match.group(1)))
 
+    if not candidates:
+        return "Non spécifiée"
+
     candidates.sort(key=lambda item: item[0])
 
     values: List[str] = []
     for _, _, value in candidates:
-        if value in values:
-            continue
-        values.append(value)
+        if value not in values:
+            values.append(value)
 
-    return _build_dimension_output(values)
+    return build_dimension_output(values)
 
 
-def extraire_couleurs(libelle: str) -> str:
-    """Renvoie 'Couleur1 - Couleur2' ou 'Non spécifiée'."""
-    return _extract_colors_from_normalized_text(_normalize_text(libelle))
+def extract_colors(label: str) -> str:
+    """Return 'Color1 - Color2' or 'Non spécifiée'."""
+    return extract_colors_from_normalized_text(normalize_text(label))
+
+
+def extraire_dimensions(label: str) -> str:
+    return extract_dimensions(label)
+
+
+def extraire_couleurs(label: str) -> str:
+    return extract_colors(label)
 
 
 def extract_dimensions_series(series: pd.Series) -> pd.Series:
-    return series.fillna('').astype(str).map(extraire_dimensions)
+    """Fast vectorized dimension extraction with early filtering."""
+    labels = series.fillna('').astype(str)
+    
+    # Early filter: skip rows without digits
+    has_digits = labels.str.contains(r'\d', regex=True, na=False)
+    
+    result = pd.Series('Non spécifiée', index=labels.index)
+    
+    if has_digits.any():
+        result.loc[has_digits] = labels.loc[has_digits].map(extract_dimensions)
+    
+    return result
 
 
-def extract_couleurs_series(series: pd.Series) -> pd.Series:
-    s_norm = series.fillna('').astype(str).map(_normalize_text)
-    if not LISTE_COULEURS or not _COLOR_PATTERN:
-        return pd.Series('Non spécifiée', index=s_norm.index)
+def extract_colors_series(series: pd.Series) -> pd.Series:
+    normalized_series = series.fillna('').astype(str)
+    
+    # Early filter: skip empty or very short values
+    has_content = normalized_series.str.len() > 2
+    
+    if not COLOR_NAMES or not COLOR_PATTERN:
+        return pd.Series('Non spécifiée', index=normalized_series.index)
 
-    found = s_norm.str.findall(_COLOR_PATTERN)
+    # Only process non-empty values
+    result = pd.Series('Non spécifiée', index=normalized_series.index)
+    
+    if has_content.any():
+        # Normalize only the non-empty values
+        normalized_filtered = normalized_series[has_content].map(normalize_text)
+        found = normalized_filtered.str.findall(COLOR_PATTERN)
 
-    def map_colors_norm(lst):
-        seen = []
-        seen_set = set()
-        for x in lst:
-            canon = _COLOR_MAP.get(x, x.capitalize())
-            if canon not in seen_set:
-                seen_set.add(canon)
-                seen.append(canon)
-        return ' - '.join(seen) if seen else 'Non spécifiée'
+        def map_colors_norm(items):
+            seen = []
+            seen_set = set()
+            for item in items:
+                canon = COLOR_MAP.get(item, item.capitalize())
+                if canon not in seen_set:
+                    seen_set.add(canon)
+                    seen.append(canon)
+            return ' - '.join(seen) if seen else 'Non spécifiée'
 
-    return found.apply(map_colors_norm)
+        result.loc[has_content] = found.apply(map_colors_norm)
+    
+    return result

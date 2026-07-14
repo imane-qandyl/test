@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import argparse
+import time
 import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.styles import Alignment
 
-from src.config import DICTIONNAIRE_CATEGORIES
-from src.classifiers import recategoriser_dataset
-from src.extractors import extract_dimensions_series, extract_couleurs_series
+from src.config import CATEGORY_DICTIONARY
+from src.classifiers import recategorize_dataset
+from src.extractors import extract_dimensions_series, extract_colors_series
 
 
-def _adjust_excel_columns(output_file: Path) -> None:
+def quick_format_columns(output_file: Path) -> None:
+    """Format all column widths based on entire dataset for professional appearance."""
+    from openpyxl import load_workbook
+    
     workbook = load_workbook(output_file)
     sheet = workbook.active
 
     for column in sheet.columns:
-        values = [cell.value for cell in column if cell.value is not None]
-        if not values:
-            continue
-
-        max_length = max(len(str(value)) for value in values)
-        column_letter = column[0].column_letter
-        sheet.column_dimensions[column_letter].width = min(max(12, max_length + 2), 60)
-
-        for cell in column:
-            if cell.value is not None:
-                cell.alignment = Alignment(wrap_text=True)
+        max_len = len(str(column[0].value or ''))
+        
+        # Check all rows in column for accurate width
+        for cell in column[1:]:
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        
+        col_letter = column[0].column_letter
+        width = min(max(12, max_len + 2), 50)
+        sheet.column_dimensions[col_letter].width = width
 
     workbook.save(output_file)
 
@@ -36,19 +37,24 @@ def process_file(input_path: Path, output_dir: Path) -> None:
     if not input_path.exists():
         raise FileNotFoundError(f"Source file not found: {input_path}")
 
+    start_total = time.time()
+
     print("📥 Chargement du dataset...")
-    # Requires 'pyxlsb' engine for .xlsb files
+    start = time.time()
     df = pd.read_excel(input_path, engine='pyxlsb')
+    print(f"   ⏱️  {time.time() - start:.2f}s")
 
     print("🔄 Recherche des anomalies de catégories...")
-    df = recategoriser_dataset(df, DICTIONNAIRE_CATEGORIES)
+    start = time.time()
+    df = recategorize_dataset(df, CATEGORY_DICTIONARY)
+    print(f"   ⏱️  {time.time() - start:.2f}s")
 
     print("🎨 Extraction des dimensions et des couleurs en cours...")
-    # vectorized extractors (much faster on large DataFrames)
-    df['Dimension_Extraite'] = extract_dimensions_series(df['Libellé produit'])
-    df['Couleur_Extraite'] = extract_couleurs_series(df['Libellé produit'])
+    start = time.time()
+    df['Extracted_Dimension'] = extract_dimensions_series(df['Libellé produit'])
+    df['Extracted_Color'] = extract_colors_series(df['Libellé produit'])
+    print(f"   ⏱️  {time.time() - start:.2f}s")
 
-    # Ensure expected types/format
     if 'Cod_cmd' in df.columns:
         df['Cod_cmd'] = df['Cod_cmd'].astype(str)
 
@@ -61,10 +67,18 @@ def process_file(input_path: Path, output_dir: Path) -> None:
     output_file = output_dir / f"{input_path.stem} CLEAN.xlsx"
 
     print("💾 Enregistrement du fichier de données nettoyé...")
-    df.to_excel(output_file, index=False, engine='openpyxl')
-    _adjust_excel_columns(output_file)
-    print(f"✨ Succès ! Le fichier propre est disponible ici : {output_file}")
+    start = time.time()
+    with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Données')
+        worksheet = writer.sheets['Données']
+        worksheet.freeze_panes(1, 0)
 
+        # largeurs calculées depuis le DataFrame (vectorisé, pas cellule par cellule)
+        for i, col in enumerate(df.columns):
+            max_len = max(int(df[col].astype(str).str.len().max()), len(str(col)))
+            width = min(max(max_len + 2, 12), 50)
+            worksheet.set_column(i, i, width)
+    print(f"   ⏱️  {time.time() - start:.2f}s")
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Clean ecommerce dataset")

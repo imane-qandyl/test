@@ -1,55 +1,92 @@
-import pandas as pd
-from typing import Dict, List, Pattern, Tuple
 import re
 import unicodedata
+from typing import Dict, List, Optional, Pattern, Tuple
+
+import pandas as pd
 
 
-def normalize_text(s: str) -> str:
-    s = str(s or '')
-    s = s.lower().strip()
-    s = unicodedata.normalize('NFKD', s)
-    return ''.join(ch for ch in s if not unicodedata.combining(ch))
+def normalize_text(value: str) -> str:
+    value = str(value or '')
+    value = value.lower().strip()
+    value = unicodedata.normalize('NFKD', value)
+    return ''.join(ch for ch in value if not unicodedata.combining(ch))
 
 
-def build_patterns(dictionnaire_mots_cles: Dict[str, List[str]]) -> List[Tuple[str, Pattern]]:
-    patterns: List[Tuple[str, Pattern]] = []
-    for cat, mots in dictionnaire_mots_cles.items():
-        if not mots:
+def build_keyword_patterns(keyword_dictionary: Dict[str, List[str]]) -> Dict[str, Pattern]:
+    """Build a single pattern per category (no escaping needed for word boundaries)."""
+    patterns: Dict[str, Pattern] = {}
+    for category, keywords in keyword_dictionary.items():
+        if not keywords:
             continue
-        # normalize and escape keywords
+
         keys = []
-        for m in mots:
-            nm = normalize_text(m)
-            if not nm:
-                continue
-            keys.append(re.escape(nm))
+        for keyword in keywords:
+            normalized = normalize_text(keyword)
+            if normalized:
+                keys.append(re.escape(normalized))
+
         if not keys:
             continue
-        # word-boundary pattern to avoid partial matches
-        pat = re.compile(r"\b(?:" + "|".join(keys) + r")\b")
-        patterns.append((cat, pat))
+
+        # Single regex per category, faster than multiple checks
+        pattern = re.compile(r"\b(?:" + "|".join(keys) + r")\b")
+        patterns[category] = pattern
     return patterns
 
 
-def recategoriser_dataset(df: pd.DataFrame, dictionnaire_mots_cles: Dict[str, List[str]]) -> pd.DataFrame:
-    categories_autorisees = set(df['Nature'].dropna().unique())
-    patterns = [(cat, pat) for cat, pat in build_patterns(dictionnaire_mots_cles) if cat in categories_autorisees]
+# Module-level pattern cache
+_PATTERN_CACHE: Dict[int, Dict[str, Pattern]] = {}
 
+
+def recategorize_dataset(df: pd.DataFrame, keyword_dictionary: Dict[str, List[str]]) -> pd.DataFrame:
+    """Fast recategorization using vectorized string operations."""
+    if 'Nature' not in df.columns or 'Libellé produit' not in df.columns:
+        return df
+    
+    allowed_categories = set(df['Nature'].dropna().unique())
+    
+    # Build and cache patterns
+    dict_key = id(keyword_dictionary)
+    if dict_key not in _PATTERN_CACHE:
+        _PATTERN_CACHE[dict_key] = build_keyword_patterns(keyword_dictionary)
+    
+    all_patterns = _PATTERN_CACHE[dict_key]
+    patterns = {cat: pat for cat, pat in all_patterns.items() if cat in allowed_categories}
+
+    if not patterns:
+        return df
+
+    # Normalize labels once
     labels = df['Libellé produit'].fillna('').astype(str).map(normalize_text)
-    current_nature = df['Nature']
+    current_nature = df['Nature'].copy()
 
-    assigned = pd.Series(pd.NA, index=df.index, dtype='object')
-    for cat, pat in patterns:
-        can_assign = assigned.isna()
-        if not can_assign.any():
-            break
-        matches = labels.str.contains(pat, na=False)
-        assigned.loc[can_assign & matches] = cat
+    # Use boolean indexing for speed
+    assigned = pd.Series(False, index=df.index)
+    result_nature = current_nature.copy()
 
-    should_update = assigned.notna() & (assigned != current_nature)
-    compteur = int(should_update.sum())
-    if compteur:
-        df.loc[should_update, 'Nature'] = assigned.loc[should_update]
+    # Process categories in order
+    for category, pattern in patterns.items():
+        # Find unassigned rows that match this category
+        not_yet_assigned = ~assigned
+        matches = labels.str.contains(pattern, na=False, regex=True)
+        new_matches = not_yet_assigned & matches & (current_nature != category)
 
-    print(f"✅ Recatégorisation effectuée : {compteur} lignes corrigées.")
+        # Assign matching rows
+        if new_matches.any():
+            result_nature.loc[new_matches] = category
+            assigned.loc[new_matches] = True
+
+    # Update the dataframe only where changes occurred
+    changed = result_nature != current_nature
+    if changed.any():
+        df.loc[changed, 'Nature'] = result_nature.loc[changed]
+        updated_count = int(changed.sum())
+        print(f"✅ Recatégorisation effectuée : {updated_count} lignes corrigées.")
+    else:
+        print(f"✅ Recatégorisation effectuée : 0 lignes corrigées.")
+
     return df
+
+
+def recategoriser_dataset(df: pd.DataFrame, keyword_dictionary: Dict[str, List[str]]) -> pd.DataFrame:
+    return recategorize_dataset(df, keyword_dictionary)
