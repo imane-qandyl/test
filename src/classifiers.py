@@ -1,24 +1,17 @@
-# Script de recatégorisation — conçu pour rester lisible et facile à suivre.
-"""Détecte et corrige les anomalies de la colonne `Nature` en se basant
-sur un dictionnaire de mots-clés.
-
-Le code n'ajoute pas de nouvelles catégories : il n'assigne que des
-catégories déjà présentes dans le jeu de données.
-"""
 import pandas as pd
 from typing import Dict, List, Pattern, Tuple
 import re
 import unicodedata
 
 
-def _normalize_text(s: str) -> str:
+def normalize_text(s: str) -> str:
     s = str(s or '')
     s = s.lower().strip()
     s = unicodedata.normalize('NFKD', s)
     return ''.join(ch for ch in s if not unicodedata.combining(ch))
 
 
-def _build_patterns(dictionnaire_mots_cles: Dict[str, List[str]]) -> List[Tuple[str, Pattern]]:
+def build_patterns(dictionnaire_mots_cles: Dict[str, List[str]]) -> List[Tuple[str, Pattern]]:
     patterns: List[Tuple[str, Pattern]] = []
     for cat, mots in dictionnaire_mots_cles.items():
         if not mots:
@@ -26,7 +19,7 @@ def _build_patterns(dictionnaire_mots_cles: Dict[str, List[str]]) -> List[Tuple[
         # normalize and escape keywords
         keys = []
         for m in mots:
-            nm = _normalize_text(m)
+            nm = normalize_text(m)
             if not nm:
                 continue
             keys.append(re.escape(nm))
@@ -39,31 +32,24 @@ def _build_patterns(dictionnaire_mots_cles: Dict[str, List[str]]) -> List[Tuple[
 
 
 def recategoriser_dataset(df: pd.DataFrame, dictionnaire_mots_cles: Dict[str, List[str]]) -> pd.DataFrame:
-    """Parcourt le DataFrame et corrige `Nature` en utilisant des regex normalisés.
-
-    Matching uses accent-stripped, lowercased keywords with word boundaries to
-    reduce false positives. Categories are only assigned if they already exist
-    in the dataset (preserves previous behavior).
-    """
     categories_autorisees = set(df['Nature'].dropna().unique())
-    compteur = 0
+    patterns = [(cat, pat) for cat, pat in build_patterns(dictionnaire_mots_cles) if cat in categories_autorisees]
 
-    patterns = _build_patterns(dictionnaire_mots_cles)
+    labels = df['Libellé produit'].fillna('').astype(str).map(normalize_text)
+    current_nature = df['Nature']
 
-    for idx, row in df.iterrows():
-        libelle = _normalize_text(row.get('Libellé produit', ''))
-        categorie_actuelle = row.get('Nature')
-        nouvelle = None
+    assigned = pd.Series(pd.NA, index=df.index, dtype='object')
+    for cat, pat in patterns:
+        can_assign = assigned.isna()
+        if not can_assign.any():
+            break
+        matches = labels.str.contains(pat, na=False)
+        assigned.loc[can_assign & matches] = cat
 
-        for cat, pat in patterns:
-            if pat.search(libelle):
-                if cat in categories_autorisees:
-                    nouvelle = cat
-                    break
-
-        if nouvelle and nouvelle != categorie_actuelle:
-            df.at[idx, 'Nature'] = nouvelle
-            compteur += 1
+    should_update = assigned.notna() & (assigned != current_nature)
+    compteur = int(should_update.sum())
+    if compteur:
+        df.loc[should_update, 'Nature'] = assigned.loc[should_update]
 
     print(f"✅ Recatégorisation effectuée : {compteur} lignes corrigées.")
     return df

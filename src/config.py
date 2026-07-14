@@ -1,87 +1,65 @@
-"""Project configuration: categories and color maps.
-
-This module exposes `DICTIONNAIRE_CATEGORIES`, `LISTE_COULEURS` and
-`NORMALISATION_COULEURS`. If `data/dictionaries/colors.json` exists it
-will be loaded to provide a large, maintainable color dictionary.
-"""
 from pathlib import Path
 import json
 
-# Minimal fallback list of color synonyms (lowercased). The normalization
-# mapping is built dynamically from this list to avoid maintaining two
-# duplicated constants.
-_FALLBACK_LISTE = [
-    'noire', 'noires', 'noir',
-    'blanche', 'blanches', 'blanc',
-    'grise', 'grises', 'gris',
-    'bleue', 'bleu',
-    'verte', 'vert',
-    'rouge', 'jaune', 'bois'
-]
+
+def _is_hex_color_key(value: str) -> bool:
+    if not value:
+        return False
+    if value.startswith('#'):
+        value = value[1:]
+    if len(value) != 6:
+        return False
+    return all(ch in '0123456789abcdefABCDEF' for ch in value)
 
 
-def _load_colors():
+def load_colors():
     root = Path(__file__).resolve().parents[1]
     json_path = root / 'data' / 'dictionaries' / 'colors.json'
     if json_path.exists():
         try:
             with json_path.open(encoding='utf-8') as fh:
                 data = json.load(fh)
-            # The JSON maps codes (hex/RAL) -> canonical French names.
-            # Build a usable mapping for text matching: include the
-            # canonical name (lowercased) and its word tokens as keys
-            # so product labels containing 'blanc' or 'bois' will match.
-            import re
 
             normal = {}
             liste = []
-            for code, canon in data.items():
+            for raw_key, canon in data.items():
                 if not canon:
                     continue
-                key = str(canon).strip().lower()
-                # add full canonical name
-                normal[key] = canon
-                if key not in liste:
-                    liste.append(key)
-                # add constituent words (e.g. 'blanc' from 'Blanc gris')
-                # but avoid adding generic stopwords (de, et, pour...) or
-                # non-color tokens like 'salle' unless they are present as
-                # explicit keys in the source JSON or equal a canonical name.
-                stopwords = {'de', 'et', 'la', 'le', 'les', 'pour', 'avec', 'sans', 'en', 'du', 'au', 'aux', 'a'}
-                data_keys = {str(k).strip().lower() for k in data.keys()}
-                for tok in re.findall(r"[\wÀ-ÿ]+", key):
-                    tok = tok.strip()
-                    if not tok or len(tok) <= 2:
-                        continue
-                    if tok in stopwords:
-                        continue
-                    # only add token if it appears as an explicit synonym key
-                    # in the JSON, or if it equals the canonical name, or if
-                    # it is in the fallback shortlist
-                    if tok in data_keys or tok == key or tok in _FALLBACK_LISTE:
-                        if tok not in normal:
-                            normal[tok] = tok.capitalize()
-                        if tok not in liste:
-                            liste.append(tok)
+                alias_key = str(raw_key).strip().lower()
+                canon_name = str(canon).strip()
+                if not canon_name:
+                    continue
 
-            # ensure basic fallbacks are present
-            for fb in _FALLBACK_LISTE:
-                if fb not in normal:
-                    normal[fb] = fb.capitalize()
-                    if fb not in liste:
-                        liste.append(fb)
+                canonical_key = canon_name.lower()
+
+                if _is_hex_color_key(alias_key):
+                    if canonical_key not in normal:
+                        normal[canonical_key] = canon_name
+                    if canonical_key not in liste:
+                        liste.append(canonical_key)
+                    continue
+
+                if alias_key not in normal:
+                    normal[alias_key] = canon_name
+                if alias_key not in liste:
+                    liste.append(alias_key)
+
+                if canonical_key not in normal:
+                    normal[canonical_key] = canon_name
+                if canonical_key not in liste:
+                    liste.append(canonical_key)
 
             return liste, normal
         except Exception:
-            # Fall back to defaults on any error
-            return _FALLBACK_LISTE, {k: k.capitalize() for k in _FALLBACK_LISTE}
-    return _FALLBACK_LISTE, {k: k.capitalize() for k in _FALLBACK_LISTE}
+            # Fall back to empty mappings on any error.
+            return [], {}
+    return [], {}
 
 
-LISTE_COULEURS, NORMALISATION_COULEURS = _load_colors()
+LISTE_COULEURS, NORMALISATION_COULEURS = load_colors()
 
 
-def _load_categories():
+def load_categories():
     root = Path(__file__).resolve().parents[1]
     json_path = root / 'data' / 'dictionaries' / 'categories.json'
     # fallback curated mapping
@@ -108,4 +86,4 @@ def _load_categories():
     return fallback
 
 
-DICTIONNAIRE_CATEGORIES = _load_categories()
+DICTIONNAIRE_CATEGORIES = load_categories()

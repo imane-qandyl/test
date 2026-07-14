@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
-"""Entry point for cleaning the ecommerce dataset.
-
-Usage:
-  python main.py [input.xlsb] --out data/processed
-
-This script reads a binary Excel file (.xlsb), applies category corrections
-and extractors, then writes a cleaned .xlsx file.
-"""
 from pathlib import Path
 import argparse
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment
 
 from src.config import DICTIONNAIRE_CATEGORIES
 from src.classifiers import recategoriser_dataset
-from src.extractors import extraire_dimensions, extraire_couleurs, extract_dimensions_series, extract_couleurs_series
+from src.extractors import extract_dimensions_series, extract_couleurs_series
+
+
+def _adjust_excel_columns(output_file: Path) -> None:
+    workbook = load_workbook(output_file)
+    sheet = workbook.active
+
+    for column in sheet.columns:
+        values = [cell.value for cell in column if cell.value is not None]
+        if not values:
+            continue
+
+        max_length = max(len(str(value)) for value in values)
+        column_letter = column[0].column_letter
+        sheet.column_dimensions[column_letter].width = min(max(12, max_length + 2), 60)
+
+        for cell in column:
+            if cell.value is not None:
+                cell.alignment = Alignment(wrap_text=True)
+
+    workbook.save(output_file)
+
 
 def process_file(input_path: Path, output_dir: Path) -> None:
     input_path = Path(input_path)
@@ -47,6 +62,7 @@ def process_file(input_path: Path, output_dir: Path) -> None:
 
     print("💾 Enregistrement du fichier de données nettoyé...")
     df.to_excel(output_file, index=False, engine='openpyxl')
+    _adjust_excel_columns(output_file)
     print(f"✨ Succès ! Le fichier propre est disponible ici : {output_file}")
 
 
