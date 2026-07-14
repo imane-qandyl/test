@@ -1,7 +1,6 @@
 from pathlib import Path
 import json
 
-
 def is_hex_color_key(value: str) -> bool:
     if not value:
         return False
@@ -10,7 +9,6 @@ def is_hex_color_key(value: str) -> bool:
     if len(value) != 6:
         return False
     return all(ch in '0123456789abcdefABCDEF' for ch in value)
-
 
 def load_colors():
     root = Path(__file__).resolve().parents[1]
@@ -54,11 +52,9 @@ def load_colors():
             return [], {}
     return [], {}
 
-
 COLOR_NAMES, COLOR_NORMALIZATION = load_colors()
 LISTE_COULEURS = COLOR_NAMES
 NORMALISATION_COULEURS = COLOR_NORMALIZATION
-
 
 def load_categories():
     root = Path(__file__).resolve().parents[1]
@@ -84,7 +80,6 @@ def load_categories():
         except Exception:
             return fallback
     return fallback
-
 
 CATEGORY_DICTIONARY = load_categories()
 DICTIONNAIRE_CATEGORIES = CATEGORY_DICTIONARY

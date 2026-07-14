@@ -1,16 +1,13 @@
 import re
 import unicodedata
 from typing import Dict, List, Optional, Pattern, Tuple
-
 import pandas as pd
-
 
 def normalize_text(value: str) -> str:
     value = str(value or '')
     value = value.lower().strip()
     value = unicodedata.normalize('NFKD', value)
     return ''.join(ch for ch in value if not unicodedata.combining(ch))
-
 
 def build_keyword_patterns(keyword_dictionary: Dict[str, List[str]]) -> Tuple[List[Tuple[str, Pattern]], Optional[Pattern]]:
     """Build category patterns and a combined pattern for fast matching."""
@@ -44,7 +41,6 @@ def build_keyword_patterns(keyword_dictionary: Dict[str, List[str]]) -> Tuple[Li
         combined_pattern = re.compile(r"\b(?:" + "|".join(unique_keys) + r")\b")
 
     return patterns, combined_pattern
-
 
 # Module-level pattern cache
 _PATTERN_CACHE: Dict[str, Tuple[List[Tuple[str, Pattern]], Optional[Pattern]]] = {}

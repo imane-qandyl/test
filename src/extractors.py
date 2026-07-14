@@ -1,11 +1,9 @@
 import re
 import unicodedata
 from typing import Dict, List, Optional, Pattern, Tuple
-
 import pandas as pd
 
 from src.config import COLOR_NAMES, COLOR_NORMALIZATION
-
 
 def normalize_text(text: str) -> str:
     value = str(text or '').lower()
@@ -31,9 +29,7 @@ def build_color_matcher() -> Tuple[Dict[str, str], Optional[Pattern[str]]]:
     pattern = re.compile(r"\b(?:" + "|".join(re.escape(key) for key in unique_keys) + r")\b")
     return mapping, pattern
 
-
 COLOR_MAP, COLOR_PATTERN = build_color_matcher()
-
 
 def extract_colors_from_normalized_text(text: str) -> str:
     found: List[str] = []
@@ -49,7 +45,6 @@ def extract_colors_from_normalized_text(text: str) -> str:
 
     return ' - '.join(found) if found else 'Non spécifiée'
 
-
 NON_DIMENSION_WORDS = {
     'niveaux', 'couches', 'tiroirs', 'portes', 'personnes', 'compartiments', 'cubes',
     'zones', 'ampoules', 'etageres', 'etages', 'litres', 'litre', 'l', 'kg', 'gr', 'g', 'ml',
@@ -64,15 +59,12 @@ _PATTERN_PLUS = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)\s*\+(?![a-z0-9])")
 _PATTERN_SIGNAL = re.compile(r"(?<![a-z0-9])\d+(?:[.,]\d+)?\s*(?:cm|\+|x|\*)(?![a-z0-9])")
 _PATTERN_NUMBER = re.compile(r"(?<![a-z0-9])(\d+(?:[.,]\d+)?)(?![a-z0-9])")
 
-
 def build_dimension_output(values: List[str]) -> str:
     return " / ".join(values) if values else "Non spécifiée"
-
 
 def looks_like_dimension_context(text: str, start: int, end: int) -> bool:
     snippet = text[max(0, start - 20):min(len(text), end + 20)].lower()
     return any(token in snippet for token in ['cm', 'hauteur', 'largeur', 'longueur', 'profondeur', 'dimension', 'dimensions'])
-
 
 def should_skip_candidate(text: str, match: re.Match[str]) -> bool:
     next_text = text[match.end():].lstrip()
@@ -91,7 +83,6 @@ def should_skip_candidate(text: str, match: re.Match[str]) -> bool:
         return True
 
     return False
-
 
 def extract_dimensions(label: str) -> str:
     """Return one or more readable dimensions or 'Non spécifiée'."""
@@ -165,19 +156,15 @@ def extract_dimensions(label: str) -> str:
 
     return build_dimension_output(values)
 
-
 def extract_colors(label: str) -> str:
     """Return 'Color1 - Color2' or 'Non spécifiée'."""
     return extract_colors_from_normalized_text(normalize_text(label))
 
-
 def extraire_dimensions(label: str) -> str:
     return extract_dimensions(label)
 
-
 def extraire_couleurs(label: str) -> str:
     return extract_colors(label)
-
 
 def extract_dimensions_series(series: pd.Series) -> pd.Series:
     """Fast vectorized dimension extraction with early filtering."""
@@ -192,7 +179,6 @@ def extract_dimensions_series(series: pd.Series) -> pd.Series:
         result.loc[has_digits] = labels.loc[has_digits].map(extract_dimensions)
     
     return result
-
 
 def extract_colors_series(series: pd.Series) -> pd.Series:
     normalized_series = series.fillna('').astype(str)
