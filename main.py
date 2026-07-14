@@ -68,16 +68,16 @@ def process_file(input_path: Path, output_dir: Path) -> None:
 
     print("💾 Enregistrement du fichier de données nettoyé...")
     start = time.time()
-    with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Données')
-        worksheet = writer.sheets['Données']
-        worksheet.freeze_panes(1, 0)
+    from openpyxl.utils import get_column_letter
 
-        # largeurs calculées depuis le DataFrame (vectorisé, pas cellule par cellule)
-        for i, col in enumerate(df.columns):
-            max_len = max(int(df[col].astype(str).str.len().max()), len(str(col)))
+    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Données')
+        ws = writer.sheets['Données']
+        ws.freeze_panes = 'A2'
+        for i, col in enumerate(df.columns, start=1):
+            max_len = max(int(df[col].astype(str).str.len().max()) if len(df) else 0, len(str(col)))
             width = min(max(max_len + 2, 12), 50)
-            worksheet.set_column(i, i, width)
+            ws.column_dimensions[get_column_letter(i)].width = width
     print(f"   ⏱️  {time.time() - start:.2f}s")
 
 def main() -> None:
